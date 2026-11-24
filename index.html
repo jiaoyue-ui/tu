@@ -1902,7 +1902,7 @@ function calcAllShipping(prov,w,opts){
     if(prov==='新疆'||prov==='西藏'){
       ydF=(w<=0.5&&ydSpecial)?'通票:4':'4+'+w+'×'+SHIP_RATES.yd[prov]+'-2';
     }else{
-      ydF=w<=3?'≤3kg通票:2':'4+'+w+'×'+SHIP_RATES.yd[prov]+'-2';
+      ydF=w<=3?'≤3kg通票:4':'4+'+w+'×'+SHIP_RATES.yd[prov]+'-2';
     }
   }
   push('yd','📦 韵达',ydP,ydF);
