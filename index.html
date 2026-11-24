@@ -1900,7 +1900,7 @@ function calcAllShipping(prov,w,opts){
   let ydF='';
   if(SHIP_RATES.yd[prov]){
     if(prov==='新疆'||prov==='西藏'){
-      ydF=(w<=0.5&&ydSpecial)?'通票:2':'4+'+w+'×'+SHIP_RATES.yd[prov]+'-2';
+      ydF=(w<=0.5&&ydSpecial)?'通票:4':'4+'+w+'×'+SHIP_RATES.yd[prov]+'-2';
     }else{
       ydF=w<=3?'≤3kg通票:2':'4+'+w+'×'+SHIP_RATES.yd[prov]+'-2';
     }
@@ -1908,7 +1908,7 @@ function calcAllShipping(prov,w,opts){
   push('yd','📦 韵达',ydP,ydF);
   if(!(prov==='新疆'||prov==='西藏')){
     const ztP=shipZt(w,prov);
-    const ztF=ztP!==null?(w<=3?'≤3kg通票:2.3':w+'×'+SHIP_RATES.zt[prov]):'';
+    const ztF=ztP!==null?(w<=3?'≤3kg通票:4':w+'×'+SHIP_RATES.zt[prov]):'';
     push('zt','🚚 中通',ztP,ztF);
   }
   const sfKey=opts.sfArea||prov;
