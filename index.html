@@ -1858,23 +1858,36 @@ function getCartWeightKg(){
 }
 function shipYd(w,prov,special){
   if(!SHIP_RATES.yd[prov])return null;
-  // 【修改点1】：3公斤以内强制返回4元，超过3公斤走原逻辑
+  // 3公斤内直接返回4元
   if(w<=3) return 4;
   
+  // 超过3公斤，按原逻辑计算
+  let price = 0;
   if(prov==='新疆'||prov==='西藏'){
-    if(w<=0.5&&special)return 2;
-    return 4+w*SHIP_RATES.yd[prov]-2;
+    if(w<=0.5&&special) return 4; // 原逻辑如果是2，这里也兜底成4
+    price = 4+w*SHIP_RATES.yd[prov]-2;
+  }else{
+    price = 4+w*SHIP_RATES.yd[prov]-2;
   }
-  return 4+w*SHIP_RATES.yd[prov]-2;
+  
+  // 【核心修改】：算出来的价格如果小于4，就强制按4收；如果大于4，就按算出来的收
+  return price < 4 ? 4 : price;
 }
+
 function shipZt(w,prov){
   if(prov==='新疆'||prov==='西藏')return null;
   const r=SHIP_RATES.zt[prov];if(!r)return null;
-  // 【修改点2】：3公斤以内强制返回4元，超过3公斤走原逻辑
+  
+  // 3公斤内直接返回4元
   if(w<=3) return 4;
   
-  return w*r;
+  // 超过3公斤，按原逻辑计算
+  let price = w * r;
+  
+  // 【核心修改】：算出来的价格如果小于4，就强制按4收；如果大于4，就按算出来的收
+  return price < 4 ? 4 : price;
 }
+
 function shipSf(w,prov){
   const d=SHIP_RATES.sf[prov];if(!d)return null;
   if(w<=10)return d[0];
@@ -1904,23 +1917,29 @@ function calcAllShipping(prov,w,opts){
   const ydSpecial=opts.ydSpecial!==false;
   const ydP=shipYd(w,prov,ydSpecial);
   
-  // 【修改点3】：韵达展示公式，3公斤内显示通票:4，超过显示原公式
+  // 韵达展示公式
   let ydF='';
   if(SHIP_RATES.yd[prov]){
     if(w<=3){
       ydF='≤3kg通票:4';
-    }else if(prov==='新疆'||prov==='西藏'){
-      ydF='4+'+w+'×'+SHIP_RATES.yd[prov]+'-2';
     }else{
-      ydF='4+'+w+'×'+SHIP_RATES.yd[prov]+'-2';
+      // 如果算出来还是4，说明没超重太多，显示保底4；如果大于4，显示具体公式
+      ydF = (ydP <= 4) ? '保底:4' : '4+'+w+'×'+SHIP_RATES.yd[prov]+'-2';
     }
   }
   push('yd','📦 韵达',ydP,ydF);
   
   if(!(prov==='新疆'||prov==='西藏')){
     const ztP=shipZt(w,prov);
-    // 【修改点4】：中通展示公式，3公斤内显示通票:4，超过显示原公式
-    const ztF=ztP!==null?(w<=3?'≤3kg通票:4':w+'×'+SHIP_RATES.zt[prov]):'';
+    // 中通展示公式
+    let ztF = '';
+    if(ztP !== null){
+      if(w<=3){
+        ztF='≤3kg通票:4';
+      }else{
+        ztF = (ztP <= 4) ? '保底:4' : w+'×'+SHIP_RATES.zt[prov];
+      }
+    }
     push('zt','🚚 中通',ztP,ztF);
   }
   
