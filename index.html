@@ -1858,14 +1858,22 @@ function getCartWeightKg(){
 }
 function shipYd(w,prov,special){
   if(!SHIP_RATES.yd[prov])return null;
-  // 【修改点1】：真实运费强制返回 4 元
-  return 4;
+  // 【修改点1】：3公斤以内强制返回4元，超过3公斤走原逻辑
+  if(w<=3) return 4;
+  
+  if(prov==='新疆'||prov==='西藏'){
+    if(w<=0.5&&special)return 2;
+    return 4+w*SHIP_RATES.yd[prov]-2;
+  }
+  return 4+w*SHIP_RATES.yd[prov]-2;
 }
 function shipZt(w,prov){
   if(prov==='新疆'||prov==='西藏')return null;
   const r=SHIP_RATES.zt[prov];if(!r)return null;
-  // 【修改点2】：真实运费强制返回 4 元
-  return 4;
+  // 【修改点2】：3公斤以内强制返回4元，超过3公斤走原逻辑
+  if(w<=3) return 4;
+  
+  return w*r;
 }
 function shipSf(w,prov){
   const d=SHIP_RATES.sf[prov];if(!d)return null;
@@ -1896,17 +1904,23 @@ function calcAllShipping(prov,w,opts){
   const ydSpecial=opts.ydSpecial!==false;
   const ydP=shipYd(w,prov,ydSpecial);
   
-  // 【修改点3】：韵达展示公式直接写死为通票:4
+  // 【修改点3】：韵达展示公式，3公斤内显示通票:4，超过显示原公式
   let ydF='';
   if(SHIP_RATES.yd[prov]){
-    ydF='通票:4';
+    if(w<=3){
+      ydF='≤3kg通票:4';
+    }else if(prov==='新疆'||prov==='西藏'){
+      ydF='4+'+w+'×'+SHIP_RATES.yd[prov]+'-2';
+    }else{
+      ydF='4+'+w+'×'+SHIP_RATES.yd[prov]+'-2';
+    }
   }
   push('yd','📦 韵达',ydP,ydF);
   
   if(!(prov==='新疆'||prov==='西藏')){
     const ztP=shipZt(w,prov);
-    // 【修改点4】：中通展示公式直接写死为通票:4
-    const ztF=ztP!==null?'通票:4':'';
+    // 【修改点4】：中通展示公式，3公斤内显示通票:4，超过显示原公式
+    const ztF=ztP!==null?(w<=3?'≤3kg通票:4':w+'×'+SHIP_RATES.zt[prov]):'';
     push('zt','🚚 中通',ztP,ztF);
   }
   
