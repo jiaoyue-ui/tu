@@ -1856,19 +1856,45 @@ function getCartWeightKg(){
   });
   return total;
 }
+
+// ==========================================
+// 【快递类】：应用 3公斤内通票4元，且最低不低于4元
+// ==========================================
 function shipYd(w,prov,special){
   if(!SHIP_RATES.yd[prov])return null;
+  // 3公斤以内直接返回4元
+  if(w<=3) return 4;
+  
+  // 超过3公斤，按原逻辑计算
+  let price = 0;
   if(prov==='新疆'||prov==='西藏'){
-    if(w<=0.5&&special)return 2;
-    return 4+w*SHIP_RATES.yd[prov]-2;
+    if(w<=0.5&&special) return 4; 
+    price = 4+w*SHIP_RATES.yd[prov]-2;
+  }else{
+    price = 4+w*SHIP_RATES.yd[prov]-2;
   }
-  return w<=3?2:4+w*SHIP_RATES.yd[prov]-2;
+  
+  // 核心保底：算出来的价格如果小于4，强制按4收
+  return price < 4 ? 4 : price;
 }
+
 function shipZt(w,prov){
   if(prov==='新疆'||prov==='西藏')return null;
   const r=SHIP_RATES.zt[prov];if(!r)return null;
-  return w<=3?2.3:w*r;
+  
+  // 3公斤以内直接返回4元
+  if(w<=3) return 4;
+  
+  // 超过3公斤，按原逻辑计算
+  let price = w * r;
+  
+  // 核心保底：算出来的价格如果小于4，强制按4收
+  return price < 4 ? 4 : price;
 }
+
+// ==========================================
+// 【物流类】：完全保持原样，不作任何修改
+// ==========================================
 function shipSf(w,prov){
   const d=SHIP_RATES.sf[prov];if(!d)return null;
   if(w<=10)return d[0];
@@ -1887,6 +1913,7 @@ function shipLht(w,rate){
   const f=rate?rate[0]:8,c=rate?rate[1]:0.8;
   return w<30?f+c*w:c*w;
 }
+
 function calcAllShipping(prov,w,opts){
   opts=opts||{};
   const add=parseFloat(CONFIG.ship_markup)||0;
@@ -1897,20 +1924,33 @@ function calcAllShipping(prov,w,opts){
   };
   const ydSpecial=opts.ydSpecial!==false;
   const ydP=shipYd(w,prov,ydSpecial);
+  
+  // 韵达展示公式
   let ydF='';
   if(SHIP_RATES.yd[prov]){
-    if(prov==='新疆'||prov==='西藏'){
-      ydF=(w<=0.5&&ydSpecial)?'通票:2':'4+'+w+'×'+SHIP_RATES.yd[prov]+'-2';
+    if(w<=3){
+      ydF='≤3kg通票:4';
     }else{
-      ydF=w<=3?'≤3kg通票:2':'4+'+w+'×'+SHIP_RATES.yd[prov]+'-2';
+      ydF = (ydP <= 4) ? '保底:4' : '4+'+w+'×'+SHIP_RATES.yd[prov]+'-2';
     }
   }
   push('yd','📦 韵达',ydP,ydF);
+  
   if(!(prov==='新疆'||prov==='西藏')){
     const ztP=shipZt(w,prov);
-    const ztF=ztP!==null?(w<=3?'≤3kg通票:2.3':w+'×'+SHIP_RATES.zt[prov]):'';
+    // 中通展示公式
+    let ztF = '';
+    if(ztP !== null){
+      if(w<=3){
+        ztF='≤3kg通票:4';
+      }else{
+        ztF = (ztP <= 4) ? '保底:4' : w+'×'+SHIP_RATES.zt[prov];
+      }
+    }
     push('zt','🚚 中通',ztP,ztF);
   }
+  
+  // 以下物流展示公式完全保持原样
   const sfKey=opts.sfArea||prov;
   const sfD=SHIP_RATES.sf[sfKey];
   if(sfD){
